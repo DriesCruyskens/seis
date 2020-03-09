@@ -14,11 +14,14 @@ export default class Seis {
             seis_smooth: 50,
             //draw_original_path: false,
             noise_ratio: .56,
+            map_in_max: .4,
             theta_increment: 585,
             n_vertices: 600,
             seed: 1000,
             radius: 2.5,
-            fade_dist: 100,
+            fade_origin: true,
+            fade_edge: true,
+            fade_dist: 160,
         }
 
         Number.prototype.map = function (in_min, in_max, out_min, out_max) {
@@ -98,8 +101,8 @@ export default class Seis {
 
     seisify(path_in, interval) {
         let path_out = new paper.Path()
-        let offset, p, n, amp, r, noise
-        
+        let offset, p, n, amp, noise, d, fade
+        let r = paper.view.bounds.width / this.params.radius
         // mod: modulo: with modulo 2 every dot alternates left and right of the original path
         // mod 4: 2 consecutive dots left, 2 consecutive right etc..
         let mod = 2
@@ -108,7 +111,6 @@ export default class Seis {
             p = path_in.getPointAt(offset)
             amp = 0
 
-            
             // noise functions
             //amp = this.params.amp
 
@@ -116,31 +118,46 @@ export default class Seis {
             amp += noise.map(-1, 1, 0, this.params.amp*.5) */
 
             noise = this.noise3D(p.x/this.params.seis_smooth, p.y/this.params.seis_smooth, 10000)
-            amp += noise.map(-0, .4, 0, this.params.amp*this.params.noise_ratio)
+            amp += noise.map(-0, .4, 0, this.params.noise_ratio)
 
-            /*
-            noise = this.noise3D(p.x/this.params.seis_smooth/4, p.y/this.params.seis_smooth/4, 0)
-            amp += noise.map(-1, 1, 0, this.params.amp*.2) */
+            
+            noise = this.noise3D(p.x/this.params.seis_smooth, p.y/this.params.seis_smooth*4, 0)
+            amp += noise.map(-1, 1, 0, .6)
 
             for (let i = 0; i < this.params.n_noise; i++) {
                 noise = this.noise3D(p.x/((i+1)*4), p.y/((i+1)*4), Math.random() * 100000)
-                amp += noise.map(-1, 1, 0, this.params.amp * ((1-this.params.noise_ratio)/this.params.n_noise))
+                amp += noise.map(-1, 1, 0, ((1-this.params.noise_ratio)/this.params.n_noise))
             }
 
-            // fade near origin and edge
-            /* amp = amp * Math.min(this.center.getDistance(p), this.params.fade_dist).map(0, this.params.fade_dist, .6, 1)
-            r = paper.view.bounds.width / this.params.radius
-            amp = amp * Math.min(r-this.center.getDistance(p), this.params.fade_dist).map(0, this.params.fade_dist, .5, 1) */
+            // scale normalised to amp
+            amp = amp * this.params.amp
 
+            // add fade to center and edge
+            d = this.center.getDistance(p)
+            if (this.params.fade_origin) {
+                fade =  Math.min(this.center.getDistance(p), this.params.fade_dist).map(0, this.params.fade_dist, 0, 1)
+                fade = (--fade)*fade*fade+1 // easeOutCubic https://gist.github.com/gre/1650294, https://easings.net/en
+                amp = amp * fade
+            }
+            
+            if (this.params.fade_edge) {
+                fade =  Math.min((r-d)*2, this.params.fade_dist).map(0, this.params.fade_dist, 0, 1) // fading less at the edge than at origin
+                fade = (--fade)*fade*fade+1 // easeOutCubic https://gist.github.com/gre/1650294, https://easings.net/en
+                amp = amp * fade
+            }
+            
+
+            // alternate vertices left and right of original path
             if (i % mod < mod/2) {
                 n = path_in.getNormalAt(offset).multiply(amp).add(p)
             } else {
                 n = path_in.getNormalAt(offset).multiply(-amp).add(p)
             }
+            // add vertex to path
             path_out.add(n)
         }
         path_out.smooth({ type: 'geometric' })
-        //path_in.replaceWith(path_out)
+
         return path_out.sendToBack() // send to back makes it so that it gets drawn first before the original line
     }
 
@@ -176,13 +193,28 @@ export default class Seis {
             this.reset();
         });
 
-        seis.add(this.params, 'amp', 0, 20).onChange((value) => {
+        seis.add(this.params, 'amp', 0, 20).onFinishChange((value) => {
             this.params.amp = value;
             this.reset();
         });
 
-        seis.add(this.params, 'seis_smooth', 0, 200).onChange((value) => {
+        seis.add(this.params, 'map_in_max', 0, 1).onFinishChange((value) => {
+            this.params.map_in_max = value;
+            this.reset();
+        });
+
+        seis.add(this.params, 'seis_smooth', 0, 200).onFinishChange((value) => {
             this.params.seis_smooth = value;
+            this.reset();
+        });
+
+        seis.add(this.params, 'fade_origin').onFinishChange((value) => {
+            this.params.fade_origin = value;
+            this.reset();
+        });
+
+        seis.add(this.params, 'fade_edge').onFinishChange((value) => {
+            this.params.fade_edge = value;
             this.reset();
         });
 
@@ -193,7 +225,7 @@ export default class Seis {
 
         let noise = this.gui.addFolder('noise');
 
-        noise.add(this.params, 'seed', 0, 2000).onChange((value) => {
+        noise.add(this.params, 'seed', 0, 2000).onFinishChange((value) => {
             this.params.seed = value;
             this.reset();
         });
