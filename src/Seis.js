@@ -8,7 +8,16 @@ export default class Seis {
 
     constructor(canvas_id) {
         this.params = {
-            n_seis: 80000,
+            n_seis: 100000,
+            l1_multiplier: 3,
+            l1_sharpness: .7,
+            l1_opacity: .88,
+            l2_multiplier: .5,
+            l2_sharpness: .7,
+            l2_opacity: 0,
+            l3_multiplier: .2,
+            l3_sharpness: 0,
+            l3_opacity: .7,
             amp: 3,
             n_noise: 2,
             seis_smooth: 50,
@@ -19,9 +28,9 @@ export default class Seis {
             n_vertices: 600,
             seed: 1000,
             radius: 2.5,
-            fade_origin: true,
+            fade_origin: false,
             fade_edge: true,
-            fade_dist: 160,
+            fade_dist: 260,
         }
 
         Number.prototype.map = function (in_min, in_max, out_min, out_max) {
@@ -44,6 +53,7 @@ export default class Seis {
     }
 
     randomize() {
+        this.noise3D = makeNoise3D(Date.now());
         this.reset()
     }
 
@@ -101,33 +111,45 @@ export default class Seis {
 
     seisify(path_in, interval) {
         let path_out = new paper.Path()
-        let offset, p, n, amp, noise, d, fade
-        let r = paper.view.bounds.width / this.params.radius
+        let offset, p, n, amp, noise, d, fade, a
+        let r = paper.view.bounds.height / this.params.radius
         // mod: modulo: with modulo 2 every dot alternates left and right of the original path
         // mod 4: 2 consecutive dots left, 2 consecutive right etc..
         let mod = 2
         for (let i = 0; i < interval; i++) {
             offset = i/interval * path_in.length
             p = path_in.getPointAt(offset)
-            amp = 0
+            a = 0
 
             // noise functions
-            //amp = this.params.amp
+            amp = 1
 
             /* noise = this.noise3D(p.x/this.params.seis_smooth*.25, p.y/this.params.seis_smooth*.25, 20000)
             amp += noise.map(-1, 1, 0, this.params.amp*.5) */
 
-            noise = this.noise3D(p.x/this.params.seis_smooth, p.y/this.params.seis_smooth, 10000)
-            amp += noise.map(-0, .4, 0, this.params.noise_ratio)
+            noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l1_multiplier, p.y/this.params.seis_smooth*this.params.l1_multiplier, 0)
+            a += noise.map(-0, 1-this.params.l1_sharpness, 0, 1)
+            a = Math.abs(a)
+            a = a.clamp(this.params.l1_opacity, 1)
+            a = 1-a
+            amp = amp - a
+            amp = amp.clamp(0, 1)
 
-            
-            noise = this.noise3D(p.x/this.params.seis_smooth, p.y/this.params.seis_smooth*4, 0)
-            amp += noise.map(-1, 1, 0, .6)
+            noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l2_multiplier, p.y/this.params.seis_smooth*this.params.l2_multiplier, 0)
+            a += noise.map(-0, 1-this.params.l2_sharpness, 0, 1)
+            a = Math.abs(a)
+            a = a.clamp(this.params.l2_opacity, 1)
+            a = 1-a
+            amp = amp - a
+            amp = amp.clamp(0, 1)
 
-            for (let i = 0; i < this.params.n_noise; i++) {
-                noise = this.noise3D(p.x/((i+1)*4), p.y/((i+1)*4), Math.random() * 100000)
-                amp += noise.map(-1, 1, 0, ((1-this.params.noise_ratio)/this.params.n_noise))
-            }
+            noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l3_multiplier, p.y/this.params.seis_smooth*this.params.l3_multiplier, 0)
+            a += noise.map(-1, 1-this.params.l3_sharpness, 0, 1)
+            a = Math.abs(a)
+            a = a.clamp(this.params.l3_opacity, 1)
+            a = 1-a
+            amp = amp - a
+            amp = amp.clamp(0, 1)
 
             // scale normalised to amp
             amp = amp * this.params.amp
@@ -141,7 +163,7 @@ export default class Seis {
             }
             
             if (this.params.fade_edge) {
-                fade =  Math.min((r-d)*2, this.params.fade_dist).map(0, this.params.fade_dist, 0, 1) // fading less at the edge than at origin
+                fade =  Math.min((r-d)*2,  this.params.fade_dist).map(0, this.params.fade_dist, 0, 1) // fading less at the edge than at origin
                 fade = (--fade)*fade*fade+1 // easeOutCubic https://gist.github.com/gre/1650294, https://easings.net/en
                 amp = amp * fade
             }
@@ -188,23 +210,13 @@ export default class Seis {
 
         let seis = this.gui.addFolder('seis');
 
-        seis.add(this.params, 'n_seis', 0, 100000).step(1).onFinishChange((value) => {
+        seis.add(this.params, 'n_seis', 0, 120000).step(1).onFinishChange((value) => {
             this.params.n_seis = value;
             this.reset();
         });
 
         seis.add(this.params, 'amp', 0, 20).onFinishChange((value) => {
             this.params.amp = value;
-            this.reset();
-        });
-
-        seis.add(this.params, 'map_in_max', 0, 1).onFinishChange((value) => {
-            this.params.map_in_max = value;
-            this.reset();
-        });
-
-        seis.add(this.params, 'seis_smooth', 0, 200).onFinishChange((value) => {
-            this.params.seis_smooth = value;
             this.reset();
         });
 
@@ -218,8 +230,64 @@ export default class Seis {
             this.reset();
         });
 
-        seis.add(this.params, 'fade_dist', 0, 400).onFinishChange((value) => {
+        seis.add(this.params, 'fade_dist', 0, 1000).onFinishChange((value) => {
             this.params.fade_dist = value;
+            this.reset();
+        });
+
+        seis.add(this.params, 'seis_smooth', 0, 200).onFinishChange((value) => {
+            this.params.seis_smooth = value;
+            this.reset();
+        });
+
+        let l1 = this.gui.addFolder('l1');
+
+        l1.add(this.params, 'l1_multiplier', 0, 6).onFinishChange((value) => {
+            this.params.l1_multiplier = value;
+            this.reset();
+        });
+
+        l1.add(this.params, 'l1_sharpness', 0, 1).onFinishChange((value) => {
+            this.params.l1_sharpness = value;
+            this.reset();
+        });
+
+        l1.add(this.params, 'l1_opacity', 0.0, 1.0).onFinishChange((value) => {
+            this.params.l1_opacity = value;
+            this.reset();
+        });
+
+        let l2 = this.gui.addFolder('l2');
+
+        l2.add(this.params, 'l2_multiplier', 0, 6).onFinishChange((value) => {
+            this.params.l2_multiplier = value;
+            this.reset();
+        });
+
+        l2.add(this.params, 'l2_sharpness', 0.0, 1.0).onFinishChange((value) => {
+            this.params.l2_sharpness = value;
+            this.reset();
+        });
+
+        l2.add(this.params, 'l2_opacity', 0.0, 1.0).onFinishChange((value) => {
+            this.params.l2_opacity = value;
+            this.reset();
+        });
+
+        let l3 = this.gui.addFolder('l3');
+
+        l3.add(this.params, 'l3_multiplier', 0, 6).onFinishChange((value) => {
+            this.params.l3_multiplier = value;
+            this.reset();
+        });
+
+        l3.add(this.params, 'l3_sharpness', 0.0, 1.0).onFinishChange((value) => {
+            this.params.l3_sharpness = value;
+            this.reset();
+        });
+
+        l3.add(this.params, 'l3_opacity', 0.0, 1.0).onFinishChange((value) => {
+            this.params.l3_opacity = value;
             this.reset();
         });
 
