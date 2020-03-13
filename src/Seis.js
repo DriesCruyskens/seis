@@ -21,8 +21,8 @@ export default class Seis {
             amp: 3,
             n_noise: 2,
             seis_smooth: 50,
+            noise_function: 'nf3',
             //draw_original_path: false,
-            noise_ratio: .56,
             map_in_max: .4,
             theta_increment: 585,
             n_vertices: 600,
@@ -111,7 +111,7 @@ export default class Seis {
 
     seisify(path_in, interval) {
         let path_out = new paper.Path()
-        let offset, p, n, amp, noise, d, fade, a
+        let offset, p, n, amp, d, fade, a1, a
         let r = paper.view.bounds.height / this.params.radius
         // mod: modulo: with modulo 2 every dot alternates left and right of the original path
         // mod 4: 2 consecutive dots left, 2 consecutive right etc..
@@ -119,40 +119,14 @@ export default class Seis {
         for (let i = 0; i < interval; i++) {
             offset = i/interval * path_in.length
             p = path_in.getPointAt(offset)
-            a = 0
+            a1 = 0
+            a=0
 
             // noise functions
-            amp = 1
 
-            /* noise = this.noise3D(p.x/this.params.seis_smooth*.25, p.y/this.params.seis_smooth*.25, 20000)
-            amp += noise.map(-1, 1, 0, this.params.amp*.5) */
-
-            noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l1_multiplier, p.y/this.params.seis_smooth*this.params.l1_multiplier, 0)
-            a += noise.map(-0, 1-this.params.l1_sharpness, 0, 1)
-            a = Math.abs(a)
-            a = a.clamp(this.params.l1_opacity, 1)
-            a = 1-a
-            amp = amp - a
-            amp = amp.clamp(0, 1)
-
-            noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l2_multiplier, p.y/this.params.seis_smooth*this.params.l2_multiplier, 0)
-            a += noise.map(-0, 1-this.params.l2_sharpness, 0, 1)
-            a = Math.abs(a)
-            a = a.clamp(this.params.l2_opacity, 1)
-            a = 1-a
-            amp = amp - a
-            amp = amp.clamp(0, 1)
-
-            noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l3_multiplier, p.y/this.params.seis_smooth*this.params.l3_multiplier, 0)
-            a += noise.map(-1, 1-this.params.l3_sharpness, 0, 1)
-            a = Math.abs(a)
-            a = a.clamp(this.params.l3_opacity, 1)
-            a = 1-a
-            amp = amp - a
-            amp = amp.clamp(0, 1)
-
-            // scale normalised to amp
-            amp = amp * this.params.amp
+            amp = this.params.noise_function == 'nf1' ? this.noise_function_1(p) :
+                  this.params.noise_function == 'nf2' ? this.noise_function_2(p) :
+                  this.params.noise_function == 'nf3' ? this.noise_function_3(p) : null
 
             // add fade to center and edge
             d = this.center.getDistance(p)
@@ -181,6 +155,137 @@ export default class Seis {
         path_out.smooth({ type: 'geometric' })
 
         return path_out.sendToBack() // send to back makes it so that it gets drawn first before the original line
+    }
+
+    noise_function_4(p) {
+        let noise
+        let amp = 0
+        let a = 0
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l1_multiplier, p.y/this.params.seis_smooth*this.params.l1_multiplier, 0)
+        a += noise.map(-0, 1-this.params.l1_sharpness, 0, 1)
+        a = Math.abs(a)
+        a = a.clamp(this.params.l1_opacity, 1)
+        amp = amp + a
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l2_multiplier, p.y/this.params.seis_smooth*this.params.l2_multiplier, 0)
+        a += noise.map(-0, 1-this.params.l2_sharpness, 0, 1)
+        a = Math.abs(a)
+        a= a.clamp(this.params.l2_opacity, 1)
+        amp = amp + a
+
+        /*
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l3_multiplier, p.y/this.params.seis_smooth*this.params.l3_multiplier, 0)
+        a += noise.map(-1, 1-this.params.l3_sharpness, 0, 1)
+        a = Math.abs(a)
+        a = a.clamp(this.params.l3_opacity, 1)
+        a = 1-a
+        amp = amp - a
+        amp = amp.clamp(0, 1) */
+
+        // scale normalised to amp
+        amp = amp * this.params.amp
+        return amp
+    }
+
+    noise_function_3(p) {
+        let noise
+        let amp = 1
+        let a = 0
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l1_multiplier, p.y/this.params.seis_smooth*this.params.l1_multiplier, 0)
+        a += noise.map(-0, 1-this.params.l1_sharpness, 0, 1)
+        a = Math.abs(a)
+        a = a.clamp(this.params.l1_opacity, 1)
+        a = 1-a
+        amp = amp - a
+        amp = amp.clamp(0, 1)
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l2_multiplier, p.y/this.params.seis_smooth*this.params.l2_multiplier, 0)
+        a += noise.map(-0, 1-this.params.l2_sharpness, 0, 1)
+        a = Math.abs(a)
+        a= a.clamp(this.params.l2_opacity, 1)
+        a = 1-a
+        amp = amp - a
+        amp = amp.clamp(0, 1)
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l3_multiplier, p.y/this.params.seis_smooth*this.params.l3_multiplier, 0)
+        a += noise.map(-1, 1-this.params.l3_sharpness, 0, 1)
+        a = Math.abs(a)
+        a = a.clamp(this.params.l3_opacity, 1)
+        a = 1-a
+        amp = amp - a
+        amp = amp.clamp(0, 1)
+
+        // scale normalised to amp
+        amp = amp * this.params.amp
+        return amp
+    }
+
+    noise_function_2(p) {
+        let noise
+        let amp = 1
+        let a1 = 0
+        let a = 0
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l2_multiplier, p.y/this.params.seis_smooth*this.params.l2_multiplier, 0)
+        a1 += noise.map(-0, 1-this.params.l2_sharpness, 0, 1)
+        a1 = Math.abs(a1)
+        a1= a1.clamp(this.params.l2_opacity, 1)
+        a1 = 1-a1
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l1_multiplier, p.y/this.params.seis_smooth*this.params.l1_multiplier, 0)
+        a += noise.map(-0, 1-a1, 0, 1)
+        a = Math.abs(a)
+        a = a.clamp(a1, 1) // a = a.clamp(a1, 1)
+        a = 1-a
+        amp = amp - a
+        amp = amp.clamp(0, 1)
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l3_multiplier, p.y/this.params.seis_smooth*this.params.l3_multiplier, 0)
+        a += noise.map(-1, 1-this.params.l3_sharpness, 0, 1)
+        a = Math.abs(a)
+        a = a.clamp(this.params.l3_opacity, 1)
+        a = 1-a
+        amp = amp - a
+        amp = amp.clamp(0, 1)
+
+        // scale normalised to amp
+        amp = amp * this.params.amp
+        return amp
+    }
+    
+    noise_function_1(p) {
+        let noise
+        let amp = 1
+        let a1 = 0
+        let a = 0
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l2_multiplier, p.y/this.params.seis_smooth*this.params.l2_multiplier, 0)
+        a1 += noise.map(-0, 1-this.params.l2_sharpness, 0, 1)
+        a1 = Math.abs(a1)
+        a1= a1.clamp(this.params.l2_opacity, 1)
+        a1 = 1-a1
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l1_multiplier, p.y/this.params.seis_smooth*this.params.l1_multiplier, 0)
+        a += noise.map(-0, 1-a1, 0, 1)
+        a = Math.abs(a)
+        a = a.clamp(0, 1) // a = a.clamp(a1, 1)
+        a = 1-a
+        amp = amp - a
+        amp = amp.clamp(0, 1)
+
+        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l3_multiplier, p.y/this.params.seis_smooth*this.params.l3_multiplier, 0)
+        a += noise.map(-1, 1-this.params.l3_sharpness, 0, 1)
+        a = Math.abs(a)
+        a = a.clamp(this.params.l3_opacity, 1)
+        a = 1-a
+        amp = amp - a
+        amp = amp.clamp(0, 1)
+
+        // scale normalised to amp
+        amp = amp * this.params.amp
+        return amp
     }
 
     position_texture(r, theta) {
@@ -298,8 +403,8 @@ export default class Seis {
             this.reset();
         });
 
-        noise.add(this.params, 'noise_ratio', 0, 1).onFinishChange((value) => {
-            this.params.noise_ratio = value;
+        noise.add(this.params, 'noise_function', ['nf1', 'nf2', 'nf3']).onFinishChange((value) => {
+            this.params.noise_function = value;
             this.reset();
         });
 
