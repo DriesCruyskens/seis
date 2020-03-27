@@ -9,6 +9,7 @@ export default class Seis {
     constructor(canvas_id) {
         this.params = {
             n_seis: 100000,
+            strokeWidth: 1.2,
             l1_multiplier: 3,
             l1_sharpness: .7,
             l1_opacity: .88,
@@ -61,6 +62,7 @@ export default class Seis {
         paper.project.currentStyle = {
             strokeColor: 'black',
             //fillColor: '#0000FF01'
+            strokeWidth: this.params.strokeWidth,
         };
         
         paper.project.clear();
@@ -126,7 +128,9 @@ export default class Seis {
 
             amp = this.params.noise_function == 'nf1' ? this.noise_function_1(p) :
                   this.params.noise_function == 'nf2' ? this.noise_function_2(p) :
-                  this.params.noise_function == 'nf3' ? this.noise_function_3(p) : null
+                  this.params.noise_function == 'nf3' ? this.noise_function_3(p) :
+                  this.params.noise_function == 'nf4' ? this.noise_function_4(p) :
+                  null
 
             // add fade to center and edge
             d = this.center.getDistance(p)
@@ -158,30 +162,19 @@ export default class Seis {
     }
 
     noise_function_4(p) {
-        let noise
-        let amp = 0
-        let a = 0
+        // subtracting three different noise functions from maximum amplitude (1) and scaling according to amp parameter.
+        let noise, noise1, noise2
+        let amp = 1
 
-        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l1_multiplier, p.y/this.params.seis_smooth*this.params.l1_multiplier, 0)
-        a += noise.map(-0, 1-this.params.l1_sharpness, 0, 1)
-        a = Math.abs(a)
-        a = a.clamp(this.params.l1_opacity, 1)
-        amp = amp + a
+        noise2 = this.noise3D(p.x/this.params.seis_smooth, p.y/this.params.seis_smooth, 0)
+        noise2 = noise2.map(-1, 1, 0, 1)
 
-        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l2_multiplier, p.y/this.params.seis_smooth*this.params.l2_multiplier, 0)
-        a += noise.map(-0, 1-this.params.l2_sharpness, 0, 1)
-        a = Math.abs(a)
-        a= a.clamp(this.params.l2_opacity, 1)
-        amp = amp + a
+        noise1 = this.noise3D(p.x/this.params.seis_smooth, p.y/this.params.seis_smooth, noise2)
+        noise1 = noise1.map(-1, 1, 0, 5)
 
-        /*
-        noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l3_multiplier, p.y/this.params.seis_smooth*this.params.l3_multiplier, 0)
-        a += noise.map(-1, 1-this.params.l3_sharpness, 0, 1)
-        a = Math.abs(a)
-        a = a.clamp(this.params.l3_opacity, 1)
-        a = 1-a
-        amp = amp - a
-        amp = amp.clamp(0, 1) */
+        noise = this.noise3D(p.x/this.params.seis_smooth, p.y/this.params.seis_smooth, noise1)
+        noise = noise.map(-1, .5, 0, 1)
+        amp = amp - noise
 
         // scale normalised to amp
         amp = amp * this.params.amp
@@ -189,6 +182,7 @@ export default class Seis {
     }
 
     noise_function_3(p) {
+        // subtracting three different noise functions from maximum amplitude (1) and scaling according to amp parameter.
         let noise
         let amp = 1
         let a = 0
@@ -237,7 +231,7 @@ export default class Seis {
         noise = this.noise3D(p.x/this.params.seis_smooth*this.params.l1_multiplier, p.y/this.params.seis_smooth*this.params.l1_multiplier, 0)
         a += noise.map(-0, 1-a1, 0, 1)
         a = Math.abs(a)
-        a = a.clamp(a1, 1) // a = a.clamp(a1, 1)
+        a = a.clamp(a1, 1)
         a = 1-a
         amp = amp - a
         amp = amp.clamp(0, 1)
@@ -403,7 +397,7 @@ export default class Seis {
             this.reset();
         });
 
-        noise.add(this.params, 'noise_function', ['nf1', 'nf2', 'nf3']).onFinishChange((value) => {
+        noise.add(this.params, 'noise_function', ['nf1', 'nf2', 'nf3', 'nf4']).onFinishChange((value) => {
             this.params.noise_function = value;
             this.reset();
         });
@@ -423,6 +417,11 @@ export default class Seis {
 
         shape.add(this.params, 'radius', 2, 10).onFinishChange((value) => {
             this.params.radius = value;
+            this.reset();
+        });
+
+        shape.add(this.params, 'strokeWidth', .5, 2).onFinishChange((value) => {
+            this.params.strokeWidth = value;
             this.reset();
         });
 
