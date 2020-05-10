@@ -54,7 +54,7 @@ export default class Seis {
     }
 
     randomize() {
-        this.noise3D = makeNoise3D(Date.now());
+        this.params.seed = Math.random() * 2000;
         this.reset()
     }
 
@@ -309,78 +309,78 @@ export default class Seis {
 
         let seis = this.gui.addFolder('seis');
 
-        seis.add(this.params, 'n_seis', 0, 120000).step(1).onFinishChange((value) => {
+        seis.add(this.params, 'n_seis', 0, 120000).step(1).listen().onFinishChange((value) => {
             this.params.n_seis = value;
             this.reset();
         });
 
-        seis.add(this.params, 'amp', 0, 20).onFinishChange((value) => {
+        seis.add(this.params, 'amp', 0, 20).listen().onFinishChange((value) => {
             this.params.amp = value;
             this.reset();
         });
 
-        seis.add(this.params, 'fade_origin').onFinishChange((value) => {
+        seis.add(this.params, 'fade_origin').listen().onFinishChange((value) => {
             this.params.fade_origin = value;
             this.reset();
         });
 
-        seis.add(this.params, 'fade_edge').onFinishChange((value) => {
+        seis.add(this.params, 'fade_edge').listen().onFinishChange((value) => {
             this.params.fade_edge = value;
             this.reset();
         });
 
-        seis.add(this.params, 'fade_dist', 0, 1000).onFinishChange((value) => {
+        seis.add(this.params, 'fade_dist', 0, 1000).listen().onFinishChange((value) => {
             this.params.fade_dist = value;
             this.reset();
         });
 
-        seis.add(this.params, 'seis_smooth', 0, 200).onFinishChange((value) => {
+        seis.add(this.params, 'seis_smooth', 0, 200).listen().onFinishChange((value) => {
             this.params.seis_smooth = value;
             this.reset();
         });
 
         let l1 = this.gui.addFolder('l1');
 
-        l1.add(this.params, 'l1_multiplier', 0, 6).onFinishChange((value) => {
+        l1.add(this.params, 'l1_multiplier', 0, 6).listen().onFinishChange((value) => {
             this.params.l1_multiplier = value;
             this.reset();
         });
 
-        l1.add(this.params, 'l1_sharpness', 0, 1).onFinishChange((value) => {
+        l1.add(this.params, 'l1_sharpness', 0, 1).listen().onFinishChange((value) => {
             this.params.l1_sharpness = value;
             this.reset();
         });
 
-        l1.add(this.params, 'l1_opacity', 0.0, 1.0).onFinishChange((value) => {
+        l1.add(this.params, 'l1_opacity', 0.0, 1.0).listen().onFinishChange((value) => {
             this.params.l1_opacity = value;
             this.reset();
         });
 
         let l2 = this.gui.addFolder('l2');
 
-        l2.add(this.params, 'l2_multiplier', 0, 6).onFinishChange((value) => {
+        l2.add(this.params, 'l2_multiplier', 0, 6).listen().onFinishChange((value) => {
             this.params.l2_multiplier = value;
             this.reset();
         });
 
-        l2.add(this.params, 'l2_sharpness', 0.0, 1.0).onFinishChange((value) => {
+        l2.add(this.params, 'l2_sharpness', 0.0, 1.0).listen().onFinishChange((value) => {
             this.params.l2_sharpness = value;
             this.reset();
         });
 
-        l2.add(this.params, 'l2_opacity', 0.0, 1.0).onFinishChange((value) => {
+        l2.add(this.params, 'l2_opacity', 0.0, 1.0).listen().onFinishChange((value) => {
             this.params.l2_opacity = value;
             this.reset();
         });
 
         let l3 = this.gui.addFolder('l3');
 
-        l3.add(this.params, 'l3_multiplier', 0, 6).onFinishChange((value) => {
+        l3.add(this.params, 'l3_multiplier', 0, 6).listen().onFinishChange((value) => {
             this.params.l3_multiplier = value;
             this.reset();
         });
 
-        l3.add(this.params, 'l3_sharpness', 0.0, 1.0).onFinishChange((value) => {
+        l3.add(this.params, 'l3_sharpness', 0.0, 1.0).listen().onFinishChange((value) => {
             this.params.l3_sharpness = value;
             this.reset();
         });
@@ -392,35 +392,35 @@ export default class Seis {
 
         let noise = this.gui.addFolder('noise');
 
-        noise.add(this.params, 'seed', 0, 2000).onFinishChange((value) => {
+        noise.add(this.params, 'seed', 0, 2000).listen().onFinishChange((value) => {
             this.params.seed = value;
             this.reset();
         });
 
-        noise.add(this.params, 'noise_function', ['nf1', 'nf2', 'nf3', 'nf4']).onFinishChange((value) => {
+        noise.add(this.params, 'noise_function', ['nf1', 'nf2', 'nf3', 'nf4']).listen().onFinishChange((value) => {
             this.params.noise_function = value;
             this.reset();
         });
 
         let shape = this.gui.addFolder('shape');
 
-        shape.add(this.params, 'theta_increment', 0, 2000).step(1).onFinishChange((value) => {
+        shape.add(this.params, 'theta_increment', 0, 2000).step(1).listen().onFinishChange((value) => {
             this.params.theta_increment = value;
             this.reset();
         });
         
-        shape.add(this.params, 'n_vertices', 0, 2000).step(1).onFinishChange((value) => {
+        shape.add(this.params, 'n_vertices', 0, 2000).step(1).listen().onFinishChange((value) => {
             this.params.n_vertices = value;
             this.reset();
         });
         
 
-        shape.add(this.params, 'radius', 2, 10).onFinishChange((value) => {
+        shape.add(this.params, 'radius', 2, 10).listen().onFinishChange((value) => {
             this.params.radius = value;
             this.reset();
         });
 
-        shape.add(this.params, 'strokeWidth', .5, 2).onFinishChange((value) => {
+        shape.add(this.params, 'strokeWidth', .5, 2).listen().onFinishChange((value) => {
             this.params.strokeWidth = value;
             this.reset();
         });
